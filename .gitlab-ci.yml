@@ -1,0 +1,47 @@
+variables:
+  DOCKER_HUB: $DOCKER_USER/workshop-ci-entrega-02
+  
+stages:          
+  - build
+  - test
+
+services:
+  - docker:dind
+
+build-backend:       
+  stage: build
+  image: docker:latest
+
+  script:
+    - echo "Building backend..."
+    - docker build -t ${DOCKER_HUB}:backend-latest -f backend/Dockerfile backend/
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    - docker push ${DOCKER_HUB}:backend-latest
+    - echo "Backend build successful!"
+
+build-frontend:       
+  stage: build
+  image: docker:latest
+
+  script:
+    - echo "Building frontend..."
+    - docker build -t ${DOCKER_HUB}:frontend-latest -f frontend/Dockerfile frontend/
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    - docker push ${DOCKER_HUB}:frontend-latest
+    - echo "Frontend build successful!"
+
+unit-test-backend:   
+  stage: test
+  image: docker/compose
+  script:
+    - echo "Running backend unit tests..."
+    - docker-compose run --entrypoint "npm run unittest" backend
+    - echo "Finished backend unit tests"
+
+unit-test-frontend:   
+  stage: test
+  image: docker/compose
+  script:
+    - echo "Running frontend unit tests..."
+    - docker-compose run --entrypoint "npm run test" frontend
+    - echo "Finished frontend unit tests"
